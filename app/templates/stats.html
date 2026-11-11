@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics for /{{ link.code }} - SnipURL{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+        <div>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-2xl font-bold font-mono text-indigo-400">/{{ link.code }}</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium {% if is_expired %}bg-red-900/60 text-red-300 border border-red-800{% else %}bg-emerald-900/60 text-emerald-300 border border-emerald-800{% endif %}">
+                    {% if is_expired %}Expired{% else %}Active{% endif %}
+                </span>
+            </div>
+            <p class="text-slate-400 text-sm mt-1 truncate max-w-lg">
+                Target: <a href="{{ link.target_url }}" target="_blank" class="text-indigo-300 hover:underline">{{ link.target_url }}</a>
+            </p>
+        </div>
+        <a href="/" class="inline-flex items-center text-sm text-slate-400 hover:text-white transition">
+            &larr; Back to Dashboard
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-5 space-y-1">
+            <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Clicks</span>
+            <p class="text-3xl font-extrabold text-white">{{ link.clicks }}</p>
+        </div>
+        <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-5 space-y-1">
+            <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Created Date</span>
+            <p class="text-sm text-slate-200 mt-2">{{ link.created_at }}</p>
+        </div>
+        <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-5 space-y-1">
+            <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Expires</span>
+            <p class="text-sm text-slate-200 mt-2">{{ link.expires_at or 'Never' }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4 flex flex-col items-center justify-center text-center">
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">QR Code</h2>
+            <div id="qrcode" class="p-3 bg-white rounded-lg shadow"></div>
+            <p class="text-xs text-slate-400">Scan to open {{ base_url }}/{{ link.code }}</p>
+        </div>
+
+        <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4">
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Top Referrers</h2>
+            {% if top_referrers %}
+            <ul class="divide-y divide-slate-800 text-sm">
+                {% for ref in top_referrers %}
+                <li class="py-2 flex justify-between items-center text-slate-300">
+                    <span class="truncate max-w-[200px]">{{ ref.referrer }}</span>
+                    <span class="font-semibold text-indigo-400">{{ ref.count }} clicks</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-sm text-slate-500 italic">No click records recorded yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bg-slate-800/40 border border-slate-800 rounded-xl p-6 space-y-4">
+        <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent Click History</h2>
+        {% if recent_clicks %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-400">
+                <thead class="border-b border-slate-800 text-slate-300 uppercase">
+                    <tr>
+                        <th class="py-2 px-3">Timestamp (UTC)</th>
+                        <th class="py-2 px-3">Referrer</th>
+                        <th class="py-2 px-3">User Agent</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for click in recent_clicks %}
+                    <tr>
+                        <td class="py-2 px-3 whitespace-nowrap text-slate-300">{{ click.clicked_at }}</td>
+                        <td class="py-2 px-3 truncate max-w-[150px]">{{ click.referrer }}</td>
+                        <td class="py-2 px-3 truncate max-w-[280px]">{{ click.user_agent }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500 italic">Waiting for the first visitor!</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    new QRCode(document.getElementById("qrcode"), {
+        text: "{{ base_url }}/{{ link.code }}",
+        width: 140,
+        height: 140,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+    });
+</script>
+{% endblock %}

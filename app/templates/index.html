@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-12" x-data="{ copied: false, copyText(text) { navigator.clipboard.writeText(text); this.copied = true; setTimeout(() => this.copied = false, 2000); } }">
+    <div class="text-center space-y-3 pt-4">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-purple-300">
+            Shorten, Share & Track URLs
+        </h1>
+        <p class="text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
+            Transform unwieldy web addresses into neat, memorable links with real-time analytics.
+        </p>
+    </div>
+
+    {% if error %}
+    <div class="max-w-2xl mx-auto p-4 bg-red-950/70 border border-red-800 text-red-200 rounded-xl text-sm flex items-center space-x-2">
+        <svg class="w-5 h-5 flex-shrink-0 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    {% if created_link %}
+    <div class="max-w-2xl mx-auto p-6 bg-slate-800/80 border border-indigo-500/40 rounded-2xl shadow-xl shadow-indigo-950/30 space-y-4">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Link Ready!</span>
+            <a href="/stats/{{ created_link.code }}" class="text-xs text-slate-400 hover:text-white underline">View Stats &rarr;</a>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center gap-3">
+            <input type="text" readonly value="{{ base_url }}/{{ created_link.code }}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-indigo-300 font-mono text-sm focus:outline-none">
+            <button @click="copyText('{{ base_url }}/{{ created_link.code }}')" class="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold transition text-white whitespace-nowrap">
+                <span x-text="copied ? 'Copied!' : 'Copy Link'">Copy Link</span>
+            </button>
+        </div>
+        <p class="text-xs text-slate-400 truncate">Original: <a href="{{ created_link.target_url }}" target="_blank" class="hover:text-slate-200">{{ created_link.target_url }}</a></p>
+    </div>
+    {% endif %}
+
+    <div class="max-w-2xl mx-auto bg-slate-800/40 p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-lg">
+        <form action="/shorten" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1.5">Destination URL <span class="text-red-400">*</span></label>
+                <input type="url" name="target_url" required placeholder="https://super-long-destination-url.com/something" class="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Custom Slug (Optional)</label>
+                    <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-3 focus-within:border-indigo-500">
+                        <span class="text-slate-500 text-xs">/</span>
+                        <input type="text" name="custom_code" placeholder="my-slug" class="w-full bg-transparent border-0 px-2 py-2.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Expiration</label>
+                    <select name="expires_in_hours" class="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none">
+                        <option value="">Never</option>
+                        <option value="1">1 Hour</option>
+                        <option value="24">24 Hours</option>
+                        <option value="168">7 Days</option>
+                        <option value="720">30 Days</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-sm shadow-md shadow-indigo-600/20 transition duration-150">
+                Shorten URL
+            </button>
+        </form>
+    </div>
+
+    {% if recent_links %}
+    <div class="max-w-4xl mx-auto space-y-4">
+        <h2 class="text-lg font-semibold text-slate-200">Recent Links</h2>
+        <div class="bg-slate-800/40 border border-slate-800 rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-800/80 text-xs uppercase tracking-wider text-slate-400">
+                        <tr>
+                            <th class="py-3 px-4">Short Code</th>
+                            <th class="py-3 px-4">Target URL</th>
+                            <th class="py-3 px-4 text-center">Clicks</th>
+                            <th class="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800 font-normal">
+                        {% for link in recent_links %}
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-3 px-4 font-mono font-medium text-indigo-400">
+                                <a href="/{{ link.code }}" target="_blank" class="hover:underline">{{ link.code }}</a>
+                            </td>
+                            <td class="py-3 px-4 max-w-xs truncate text-slate-400" title="{{ link.target_url }}">
+                                {{ link.target_url }}
+                            </td>
+                            <td class="py-3 px-4 text-center font-semibold text-slate-200">
+                                {{ link.clicks }}
+                            </td>
+                            <td class="py-3 px-4 text-right space-x-3 text-xs">
+                                <button @click="copyText('{{ base_url }}/{{ link.code }}')" class="text-indigo-400 hover:text-indigo-300 font-medium">Copy</button>
+                                <a href="/stats/{{ link.code }}" class="text-slate-400 hover:text-white font-medium">Analytics</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
